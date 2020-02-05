@@ -1,13 +1,28 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"os"
 
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/toml"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/posflag"
+	flag "github.com/spf13/pflag"
 
 	log "github.com/Sirupsen/logrus"
+)
+
+var (
+
+	// Global configuration reader.
+	ko = koanf.New(".")
+
+	// Version of the build.
+	// This is injected at build-time.
+	// Be sure to run the provided run script to inject correctly.
+	buildVersion = "unknown"
+	buildDate    = "unknown"
 )
 
 func init() {
@@ -20,39 +35,37 @@ func init() {
 
 // Initializes the app configuration
 func initConfig() {
-	viper.AddConfigPath(".")
-	viper.SetConfigName("config")
-
-	// Default configs
-	viper.SetDefault("environment", "debug")
-	// Port to run the app
-	viper.SetDefault("address", "127.0.0.1:3000")
-	// Bleve search index path
-	viper.SetDefault("search_index_path", "search.index")
-	// RBI parsed CSV file path
-	viper.SetDefault("data_path", "data.csv")
-	// List of banks in JSON format
-	viper.SetDefault("banks_list_path", "banks.json")
-	// Default bulk insert batch size
-	viper.SetDefault("batch_size", 100)
-	// Reindex on every run
-	viper.SetDefault("re_index", false)
-	// Only index the data instead of starting the server
-	viper.SetDefault("create_index", false)
-	// Banks db path
-	viper.SetDefault("db_path", "banks.db")
-	// Geocode config
-	viper.SetDefault("geocode_api_key", "")
-	viper.SetDefault("geocode_api_uri", "")
-
-	// Parse commandline
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.Parse()
-
-	err := viper.ReadInConfig()
-	if err != nil { // Handle errors reading the config file
-		panic(fmt.Errorf("Fatal error config file: %s", err))
+	// Command line flags
+	flagSet := flag.NewFlagSet("config", flag.ContinueOnError)
+	flagSet.Usage = func() {
+		fmt.Println(flagSet.FlagUsages())
+		os.Exit(0)
 	}
+
+	// Commandline flags
+	flagSet.String("config", "config.toml", "Path to the TOML configuration file")
+	flagSet.Bool("version", false, "Current version of the build")
+
+	err := flagSet.Parse(os.Args[1:])
+	if err != nil {
+		log.Fatalf("error parsing flags: %v", err)
+	}
+
+	// Load commandline params.
+	ko.Load(posflag.Provider(flagSet, ".", ko), nil)
+
+	// Display version.
+	if ko.Bool("version") {
+		fmt.Println(fmt.Sprintf("Commit: %v\nBuild: %v", buildVersion, buildDate))
+		os.Exit(0)
+	}
+
+	// Load the config file.
+	log.Printf("reading config: %s", ko.String("config"))
+	if err := ko.Load(file.Provider(ko.String("config")), toml.Parser()); err != nil {
+		log.Fatalf("error reading config: %v", err)
+	}
+
 }
 
 // Initialize loggers
@@ -60,7 +73,7 @@ func initLogger() {
 	log.SetFormatter(&log.TextFormatter{FullTimestamp: true, ForceColors: true})
 
 	// Set log level based on environment
-	if viper.GetBool("debug") {
+	if ko.Bool("app.debug") {
 		log.SetLevel(log.DebugLevel)
 	} else {
 		log.SetLevel(log.InfoLevel)
@@ -68,11 +81,11 @@ func initLogger() {
 }
 
 func main() {
-	log.Debug("Current env : ", viper.GetBool("debug"))
+	log.Debug("Current env : ", ko.Bool("app.debug"))
 
 	// Initialize search
 	initSearch()
 
 	// Initialize server
-	initServer(viper.GetString("address"))
+	initServer(ko.String("server.address"))
 }

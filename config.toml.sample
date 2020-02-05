@@ -1,0 +1,25 @@
+[app]
+debug = true
+log_level = "info"
+
+[server]
+address = "0.0.0.0:9000"
+socket = "/tmp/cashier-go.sock"
+name = "cashier-go"
+read_timeout = 5000
+write_timeout = 5000
+keepalive_timeout = 300000
+max_body_size = 5120000
+
+
+[search]
+# Bleve search index path
+index_path = "search.index"
+// Default bulk insert batch size
+batch_size = 100
+// RBI parsed CSV file path
+data_path = "data.csv"
+
+[geocode]
+api_key = ""
+api_uri = ""

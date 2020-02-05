@@ -11,7 +11,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/blevesearch/bleve"
-	"github.com/spf13/viper"
 )
 
 // DefaultResponse Error response structure
@@ -84,8 +83,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func getGeocodeAddressHandler(w http.ResponseWriter, r *http.Request) {
 	latitude := r.URL.Query().Get("latitude")
 	longitude := r.URL.Query().Get("longitude")
-	geocodeApiKey := viper.GetString("geocode_api_key")
-	geocodeAPIURI := viper.GetString("geocode_api_uri")
+	geocodeApiKey := ko.String("search.api_key")
+	geocodeAPIURI := ko.String("search.api_uri")
 
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", geocodeAPIURI, nil)

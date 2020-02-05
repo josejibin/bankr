@@ -295,3 +295,8 @@ config.toml
 # JS
 frontend/dist/
 frontend/node_modules/
+
+
+# custom
+config.toml
+bankr.bin

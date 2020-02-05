@@ -9,7 +9,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/blevesearch/bleve"
 	"github.com/gocarina/gocsv"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -44,9 +43,9 @@ type BanksList struct {
 func initSearch() error {
 	var err error
 
-	dataPath := viper.GetString("data_path")
-	batchSize := viper.GetInt("batch_size")
-	indexPath := viper.GetString("search_index_path")
+	dataPath := ko.String("search.data_path")
+	batchSize := ko.Int("search.batch_size")
+	indexPath := ko.String("search.index_path")
 
 	bankIndex, err = bleve.Open(indexPath)
 
